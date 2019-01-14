@@ -263,7 +263,8 @@ class SecurePreference(
                     + symmetricBlockMode + "/"
                     + symmetricPadding)
             .apply {
-                init(Cipher.DECRYPT_MODE, secretKey, IvParameterSpec(encryptTextAndIv.second))
+                //https://stackoverflow.com/questions/33995233/android-aes-encryption-decryption-using-gcm-mode-in-android
+                init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, encryptTextAndIv.second))
             }
         var cryptoObject = BiometricPrompt.CryptoObject(cipher)
         return RxBiometric

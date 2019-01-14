@@ -31,8 +31,8 @@ class MainActivity : AppCompatActivity() {
                 val preference = SecurePreference(
                     "xx1c",
                     this,
-                    symmetricPadding = "PKCS7Padding",
-                    symmetricBlockMode = "CBC"
+                    symmetricPadding = "NoPadding",
+                    symmetricBlockMode = "GCM"
                 )
                 preference.initBiometrics(this)
                     .flatMapObservable {
