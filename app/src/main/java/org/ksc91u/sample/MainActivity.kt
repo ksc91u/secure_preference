@@ -10,7 +10,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        var modes = arrayOf("CBC", "ECB", "CFB", "OFB", "CTR")
+        var modes = arrayOf("GCM")
         var text = """
 〔即時新聞／綜合報導〕新北市蘆洲區林姓男子，僅僅因為兒子買肉圓沒加辣，竟直接出手痛毆，連上來勸阻的妻子被狠狠勒脖，
 林男目前已在新北市蘆洲分局集賢派出所公開道歉。
@@ -23,7 +23,7 @@ class MainActivity : AppCompatActivity() {
                 val preference = SecurePreference(
                     "xx1b",
                     this,
-                    symmetricPadding = "ISO10126Padding",
+                    symmetricPadding = "NoPadding",
                     symmetricBlockMode = it
                 )
                 val bytes = preference.encryptWithPasscode("password", text.toByteArray())
@@ -31,6 +31,7 @@ class MainActivity : AppCompatActivity() {
                 println(">>>> $it" + String(decrypt))
             }catch(e: Exception) {
                 println(">>>> $it failed")
+                println(">>>> ${e.localizedMessage}")
             }
         }
 

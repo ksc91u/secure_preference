@@ -18,8 +18,8 @@ class SecurePreference(
     val nameSpace: String,
     val context: Context,
     val symmetricEncryption: String = "AES",
-    val symmetricPadding: String = "PKCS5Padding",
-    val symmetricBlockMode: String = "CTR",
+    val symmetricPadding: String = "NoPadding",
+    val symmetricBlockMode: String = "GCM",
     val keyHashAlgorithm: String = "SHA-256",
     val asymmetricEncryption: String = "RSA"
 ) {
@@ -132,7 +132,10 @@ class SecurePreference(
     fun digestPassCode(passcode: String) : ByteArray{
         var bytes = passcode.toByteArray() + symmetricSalt32Bytes
         var digest = MessageDigest.getInstance(keyHashAlgorithm)
-        digest.update(bytes)
+        for(i in 0 .. 1000) {
+            digest.update(bytes)
+            bytes = digest.digest() + symmetricSalt32Bytes
+        }
         return digest.digest()
     }
 
