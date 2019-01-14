@@ -15,7 +15,9 @@ import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
 import com.github.pwittchen.rxbiometric.library.RxBiometric
 import com.github.pwittchen.rxbiometric.library.validation.RxPreconditions
+import io.reactivex.Completable
 import io.reactivex.Observable
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
 import io.reactivex.rxkotlin.addTo
@@ -24,6 +26,7 @@ import java.math.BigInteger
 import java.security.*
 import java.util.*
 import javax.crypto.*
+import javax.crypto.spec.GCMParameterSpec
 import javax.crypto.spec.IvParameterSpec
 import javax.crypto.spec.PBEKeySpec
 import javax.crypto.spec.SecretKeySpec
@@ -34,20 +37,18 @@ class SecurePreference(
     val context: Context,
     val symmetricEncryption: String = "AES",
     val symmetricPadding: String = "NoPadding",
-    val symmetricBlockMode: String = "GCM",
-    val keyHashAlgorithm: String = "SHA-256",
-    val asymmetricEncryption: String = "RSA"
+    val symmetricBlockMode: String = "GCM"
 ) {
 
-    lateinit var preference: SharedPreferences
+    private lateinit var preference: SharedPreferences
 
-    val disposable: CompositeDisposable = CompositeDisposable()
-    var secretKey: SecretKey? = null
-    var rsaPrivate: PrivateKey? = null
-    var rsaPublic: PublicKey? = null
-    val secureRandom = SecureRandom()
-    val cipherMode:String by lazy { "$symmetricEncryption/$symmetricBlockMode/$symmetricPadding"}
-    val ivRequired:Int by lazy {
+    private val disposable: CompositeDisposable = CompositeDisposable()
+    private var secretKey: SecretKey? = null
+    private var rsaPrivate: PrivateKey? = null
+    private var rsaPublic: PublicKey? = null
+    private val secureRandom = SecureRandom()
+    private val cipherMode:String by lazy { "$symmetricEncryption/$symmetricBlockMode/$symmetricPadding"}
+    private val ivRequired:Int by lazy {
         if (symmetricBlockMode == "ECB") {
             0
         } else if (symmetricEncryption == "BLOWFISH") {
@@ -57,7 +58,31 @@ class SecurePreference(
         }
     }
 
-    var symmetricSalt32Bytes = ByteArray(32)
+    private val propertyBlockMode by lazy{
+        if(symmetricBlockMode == KeyProperties.BLOCK_MODE_ECB){
+            KeyProperties.BLOCK_MODE_ECB
+        }else if(symmetricBlockMode == KeyProperties.BLOCK_MODE_CBC){
+            KeyProperties.BLOCK_MODE_CBC
+        }else if (symmetricBlockMode == KeyProperties.BLOCK_MODE_CTR){
+            KeyProperties.BLOCK_MODE_CTR
+        }else {
+            KeyProperties.BLOCK_MODE_GCM
+        }
+    }
+
+    private val propertyPadding by lazy {
+        if(symmetricPadding == KeyProperties.ENCRYPTION_PADDING_NONE){
+            KeyProperties.ENCRYPTION_PADDING_NONE
+        }else if (symmetricPadding == KeyProperties.ENCRYPTION_PADDING_PKCS7){
+            KeyProperties.ENCRYPTION_PADDING_PKCS7
+        }else if (symmetricPadding == KeyProperties.ENCRYPTION_PADDING_RSA_OAEP){
+            KeyProperties.ENCRYPTION_PADDING_RSA_OAEP
+        }else {
+            KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1
+        }
+    }
+
+    private var symmetricSalt32Bytes = ByteArray(32)
 
     companion object {
         val KEY_ALGORITHM_RSA = "RSA"
@@ -198,9 +223,9 @@ class SecurePreference(
             return Observable.error(IllegalStateException("Run initBiometrics first"))
         }
         val cipher = Cipher.getInstance(
-            KeyProperties.KEY_ALGORITHM_AES + "/"
-                    + KeyProperties.BLOCK_MODE_CBC + "/"
-                    + KeyProperties.ENCRYPTION_PADDING_PKCS7)
+            symmetricEncryption + "/"
+                    + symmetricBlockMode + "/"
+                    + symmetricPadding)
             .apply {
                 init(Cipher.ENCRYPT_MODE, secretKey)
             }
@@ -234,9 +259,9 @@ class SecurePreference(
             return Observable.error(IllegalStateException("Run initBiometrics first"))
         }
         val cipher = Cipher.getInstance(
-            KeyProperties.KEY_ALGORITHM_AES + "/"
-                    + KeyProperties.BLOCK_MODE_CBC + "/"
-                    + KeyProperties.ENCRYPTION_PADDING_PKCS7)
+            symmetricEncryption + "/"
+                    + symmetricBlockMode + "/"
+                    + symmetricPadding)
             .apply {
                 init(Cipher.DECRYPT_MODE, secretKey, IvParameterSpec(encryptTextAndIv.second))
             }
@@ -264,16 +289,17 @@ class SecurePreference(
 
 
     @RequiresApi(Build.VERSION_CODES.M)
-    fun initBiometrics(acvitity: FragmentActivity) {
-        RxPreconditions.canHandleBiometric(acvitity)
+    fun initBiometrics(acvitity: FragmentActivity) : Single<Boolean> {
+        return RxPreconditions.canHandleBiometric(acvitity)
             .observeOn(AndroidSchedulers.mainThread())
-            .subscribeBy {
+            .map {
                 if (!it) {
-                    Toast.makeText(acvitity, "No Biometrics Support", Toast.LENGTH_LONG).show()
-                } else {
+                    throw java.lang.IllegalStateException("No biometric support")
+                }else{
                     secretKey = getSymmetricKey(nameSpace)
                 }
-            }.addTo(disposable)
+                return@map it
+            }
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
@@ -285,13 +311,14 @@ class SecurePreference(
         }
 
 
-        var keyGenerator = KeyGenerator.getInstance(KeyProperties.KEY_ALGORITHM_AES, "AndroidKeyStore")
+        var keyGenerator = KeyGenerator.getInstance(symmetricEncryption, "AndroidKeyStore")
             .apply {
+
                 val builder = KeyGenParameterSpec.Builder(keyAlias,
                     KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
                 val keySpec = builder.setKeySize(256)
-                    .setBlockModes(KeyProperties.BLOCK_MODE_CBC)
-                    .setEncryptionPaddings(KeyProperties.ENCRYPTION_PADDING_PKCS7)
+                    .setBlockModes(propertyBlockMode)
+                    .setEncryptionPaddings(propertyPadding)
                     .setRandomizedEncryptionRequired(true)
                     .setUserAuthenticationRequired(true)
                     .setUserAuthenticationValidityDurationSeconds(5 * 60)
