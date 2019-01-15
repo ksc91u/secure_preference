@@ -1,5 +1,6 @@
 package org.ksc91u.securepreference
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
@@ -133,6 +134,7 @@ class SecurePreference(
 
     }
 
+    @SuppressLint("WrongConstant")
     private fun initRsaKey() {
         val rsaKeyName = "RSA_$nameSpace"
         val androidKeyStore = KeyStore.getInstance("AndroidKeyStore")
@@ -148,16 +150,19 @@ class SecurePreference(
         }
 
         val kpg = KeyPairGenerator.getInstance(KEY_ALGORITHM_RSA, "AndroidKeyStore")
-        val keySpec = KeyPairGeneratorSpec.Builder(context)
+        val keySpecBuilder = KeyPairGeneratorSpec.Builder(context)
             .setAlias(rsaKeyName)
-            .setKeyType(KEY_ALGORITHM_RSA)
             .setKeySize(3072)
             .setSubject(X500Principal("CN=$nameSpace"))
             .setSerialNumber(BigInteger.ONE)
             .setStartDate(Date(1970, 1, 1, 1, 1, 1))
             .setEndDate(Date(2100, 1, 1, 1, 1, 1))
-            .build()
-        kpg.initialize(keySpec)
+        if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+            keySpecBuilder.setKeyType(KeyProperties.KEY_ALGORITHM_RSA)
+        }else{
+            keySpecBuilder.setKeyType(KEY_ALGORITHM_RSA)
+        }
+        kpg.initialize(keySpecBuilder.build())
         val pair = kpg.genKeyPair()
         rsaPrivate = pair.private
         rsaPublic = pair.public
