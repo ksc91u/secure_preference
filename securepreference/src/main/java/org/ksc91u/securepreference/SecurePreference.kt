@@ -33,9 +33,9 @@ import javax.crypto.spec.SecretKeySpec
 import javax.security.auth.x500.X500Principal
 
 class SecurePreference(
-    val nameSpace: String,
-    val context: Context,
-    val symmetricEncryption: String = "AES",
+    private val nameSpace: String,
+    private val context: Context,
+    private val symmetricEncryption: String = "AES",
     val symmetricPadding: String = "NoPadding",
     val symmetricBlockMode: String = "GCM"
 ) {
@@ -59,40 +59,34 @@ class SecurePreference(
     }
 
     private val propertyBlockMode by lazy{
-        if(symmetricBlockMode == KeyProperties.BLOCK_MODE_ECB){
-            KeyProperties.BLOCK_MODE_ECB
-        }else if(symmetricBlockMode == KeyProperties.BLOCK_MODE_CBC){
-            KeyProperties.BLOCK_MODE_CBC
-        }else if (symmetricBlockMode == KeyProperties.BLOCK_MODE_CTR){
-            KeyProperties.BLOCK_MODE_CTR
-        }else {
-            KeyProperties.BLOCK_MODE_GCM
+        when (symmetricBlockMode) {
+            KeyProperties.BLOCK_MODE_ECB -> KeyProperties.BLOCK_MODE_ECB
+            KeyProperties.BLOCK_MODE_CBC -> KeyProperties.BLOCK_MODE_CBC
+            KeyProperties.BLOCK_MODE_CTR -> KeyProperties.BLOCK_MODE_CTR
+            else -> KeyProperties.BLOCK_MODE_GCM
         }
     }
 
     private val propertyPadding by lazy {
-        if(symmetricPadding == KeyProperties.ENCRYPTION_PADDING_NONE){
-            KeyProperties.ENCRYPTION_PADDING_NONE
-        }else if (symmetricPadding == KeyProperties.ENCRYPTION_PADDING_PKCS7){
-            KeyProperties.ENCRYPTION_PADDING_PKCS7
-        }else if (symmetricPadding == KeyProperties.ENCRYPTION_PADDING_RSA_OAEP){
-            KeyProperties.ENCRYPTION_PADDING_RSA_OAEP
-        }else {
-            KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1
+        when (symmetricPadding) {
+            KeyProperties.ENCRYPTION_PADDING_NONE -> KeyProperties.ENCRYPTION_PADDING_NONE
+            KeyProperties.ENCRYPTION_PADDING_PKCS7 -> KeyProperties.ENCRYPTION_PADDING_PKCS7
+            KeyProperties.ENCRYPTION_PADDING_RSA_OAEP -> KeyProperties.ENCRYPTION_PADDING_RSA_OAEP
+            else -> KeyProperties.ENCRYPTION_PADDING_RSA_PKCS1
         }
     }
 
     private var symmetricSalt32Bytes = ByteArray(32)
 
     companion object {
-        val KEY_ALGORITHM_RSA = "RSA"
+        const val KEY_ALGORITHM_RSA = "RSA"
 
-        val AES_CBC_PKCS5 = "AES/CBC/PKCS5Padding"
-        val AES_GCM_NONE = "AES/GCM/NoPadding"
-        val AES_CTR_PKCS5 = "AES/CTR/PKCS5Padding"
-        val RSA_ECB_PKCS1 = "RSA/ECB/PKCS1Padding"
-        val BLOWFISH_CTR_PKCS5 = "BLOWFISH/CTR/PKCS5Padding"
-        val AES = "AES"
+        const val AES_CBC_PKCS5 = "AES/CBC/PKCS5Padding"
+        const val AES_GCM_NONE = "AES/GCM/NoPadding"
+        const val AES_CTR_PKCS5 = "AES/CTR/PKCS5Padding"
+        const val RSA_ECB_PKCS1 = "RSA/ECB/PKCS1Padding"
+        const val BLOWFISH_CTR_PKCS5 = "BLOWFISH/CTR/PKCS5Padding"
+        const val AES = "AES"
     }
 
 
@@ -111,7 +105,7 @@ class SecurePreference(
         disposable.dispose()
     }
 
-    fun initSymmetricSalt() {
+    private fun initSymmetricSalt() {
         var byte16_0 = ByteArray(16)
         var byte16_1 = ByteArray(16)
         val keyName = "$nameSpace$symmetricEncryption"
@@ -143,7 +137,7 @@ class SecurePreference(
 
     }
 
-    fun initRsaKey() {
+    private fun initRsaKey() {
         val rsaKeyName = "RSA_$nameSpace"
         val androidKeyStore = KeyStore.getInstance("AndroidKeyStore")
         androidKeyStore.load(null)
@@ -173,7 +167,7 @@ class SecurePreference(
         rsaPublic = pair.public
     }
 
-    fun digestPassCode(passcode: String) : ByteArray{
+    private fun digestPassCode(passcode: String) : ByteArray{
         val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
         val spec = PBEKeySpec(passcode.toCharArray(), symmetricSalt32Bytes, 4000, 256)
         val secret = secretKeyFactory.generateSecret(spec)
