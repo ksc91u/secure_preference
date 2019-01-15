@@ -30,7 +30,8 @@ dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     api 'androidx.appcompat:appcompat:1.1.0-alpha01'
-    api 'com.github.ksc91u:RxBiometric:androidx-encryption-SNAPSHOT'
+    api 'com.github.ksc91u:RxBiometric:fbf89da'
+    implementation group: 'io.reactivex.rxjava2', name: 'rxkotlin', version: '2.3.0'
     api group: 'io.reactivex.rxjava2', name: 'rxkotlin', version: '2.3.0'
 
     testImplementation 'junit:junit:4.12'

@@ -3,7 +3,9 @@ package org.ksc91u.sample
 import android.os.Build
 import android.os.Bundle
 import android.util.Base64
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.android.synthetic.main.activity_main.*
 import org.ksc91u.securepreference.SecurePreference
 
@@ -35,11 +37,11 @@ class MainActivity : AppCompatActivity() {
                     preference.initBiometrics(this)
                         .flatMapObservable {
                             return@flatMapObservable preference.decryptWithBiometrics(this@MainActivity, pairNotNull)
-                        }.subscribe {
-                            if (it != null) {
-                                textTv.text = String(it)
-                            }
-                        }
+                        }.subscribeBy(onNext = {
+                            textTv.text = String(it)
+                        }, onError = {
+                            Toast.makeText(this@MainActivity, it.localizedMessage, Toast.LENGTH_LONG).show()
+                        })
                 }
 
             }
@@ -59,10 +61,12 @@ class MainActivity : AppCompatActivity() {
                             this@MainActivity,
                             textLtn.toByteArray()
                         )
-                    }.subscribe {
+                    }.subscribeBy(onNext = {
                         pair = it
-                        textTv.text = Base64.encodeToString(it?.first, Base64.URL_SAFE)
-                    }
+                        textTv.text = Base64.encodeToString(it.first, Base64.URL_SAFE)
+                    }, onError = {
+                        Toast.makeText(this@MainActivity, it.localizedMessage, Toast.LENGTH_LONG).show()
+                    })
             }
         }
 

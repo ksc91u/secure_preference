@@ -11,17 +11,13 @@ import android.util.Base64
 import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricPrompt
-import androidx.core.app.ActivityCompat
 import androidx.fragment.app.FragmentActivity
-import com.github.pwittchen.rxbiometric.library.RxBiometric
+import com.github.pwittchen.rxbiometric.library.RxBiometricBuilder
 import com.github.pwittchen.rxbiometric.library.validation.RxPreconditions
-import io.reactivex.Completable
 import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.rxkotlin.addTo
-import io.reactivex.rxkotlin.subscribeBy
 import java.math.BigInteger
 import java.security.*
 import java.util.*
@@ -47,8 +43,8 @@ class SecurePreference(
     private var rsaPrivate: PrivateKey? = null
     private var rsaPublic: PublicKey? = null
     private val secureRandom = SecureRandom()
-    private val cipherMode:String by lazy { "$symmetricEncryption/$symmetricBlockMode/$symmetricPadding"}
-    private val ivRequired:Int by lazy {
+    private val cipherMode: String by lazy { "$symmetricEncryption/$symmetricBlockMode/$symmetricPadding" }
+    private val ivRequired: Int by lazy {
         if (symmetricBlockMode == "ECB") {
             0
         } else if (symmetricEncryption == "BLOWFISH") {
@@ -58,7 +54,7 @@ class SecurePreference(
         }
     }
 
-    private val propertyBlockMode by lazy{
+    private val propertyBlockMode by lazy {
         when (symmetricBlockMode) {
             KeyProperties.BLOCK_MODE_ECB -> KeyProperties.BLOCK_MODE_ECB
             KeyProperties.BLOCK_MODE_CBC -> KeyProperties.BLOCK_MODE_CBC
@@ -167,7 +163,7 @@ class SecurePreference(
         rsaPublic = pair.public
     }
 
-    private fun digestPassCode(passcode: String) : ByteArray{
+    private fun digestPassCode(passcode: String): ByteArray {
         val secretKeyFactory = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA1")
         val spec = PBEKeySpec(passcode.toCharArray(), symmetricSalt32Bytes, 4000, 256)
         val secret = secretKeyFactory.generateSecret(spec)
@@ -180,7 +176,7 @@ class SecurePreference(
 
         val skeySpec = SecretKeySpec(digestPassCode(passcode), symmetricEncryption)
         val cipher = Cipher.getInstance(cipherMode)
-        if(ivRequired == 0){
+        if (ivRequired == 0) {
             cipher.init(Cipher.ENCRYPT_MODE, skeySpec)
         } else {
             cipher.init(Cipher.ENCRYPT_MODE, skeySpec, IvParameterSpec(iv))
@@ -194,15 +190,17 @@ class SecurePreference(
         val pair: Pair<ByteArray, ByteArray> = if (ivRequired == 0) {
             Pair(ByteArray(0), encTextBytes)
         } else {
-            Pair(encTextBytes.sliceArray(IntRange(0, ivRequired - 1)),
-                encTextBytes.sliceArray(IntRange(16, encTextBytes.size - 1)))
+            Pair(
+                encTextBytes.sliceArray(IntRange(0, ivRequired - 1)),
+                encTextBytes.sliceArray(IntRange(16, encTextBytes.size - 1))
+            )
         }
 
         val skeySpec = SecretKeySpec(digestPassCode(passcode), symmetricEncryption)
         val cipher = Cipher.getInstance(cipherMode)
-        if(ivRequired == 0){
+        if (ivRequired == 0) {
             cipher.init(Cipher.DECRYPT_MODE, skeySpec)
-        }else {
+        } else {
             cipher.init(Cipher.DECRYPT_MODE, skeySpec, IvParameterSpec(pair.first))
         }
 
@@ -211,7 +209,10 @@ class SecurePreference(
 
 
     @RequiresApi(Build.VERSION_CODES.M)
-    fun encryptWithBiometrics(activity: FragmentActivity, clearTextBytes: ByteArray): Observable<Pair<ByteArray, ByteArray>?> {
+    fun encryptWithBiometrics(
+        activity: FragmentActivity,
+        clearTextBytes: ByteArray
+    ): Observable<Pair<ByteArray, ByteArray>> {
         if (secretKey == null) {
             Toast.makeText(activity, "Run initBiometrics first", Toast.LENGTH_LONG).show()
             return Observable.error(IllegalStateException("Run initBiometrics first"))
@@ -219,24 +220,24 @@ class SecurePreference(
         val cipher = Cipher.getInstance(
             symmetricEncryption + "/"
                     + symmetricBlockMode + "/"
-                    + symmetricPadding)
+                    + symmetricPadding
+        )
             .apply {
                 init(Cipher.ENCRYPT_MODE, secretKey)
             }
         var cryptoObject = BiometricPrompt.CryptoObject(cipher)
-        return RxBiometric
+        return RxBiometricBuilder()
             .title("Encrypt")
             .description("Encrypt")
             .negativeButtonText("cancel")
             .negativeButtonListener(DialogInterface.OnClickListener { p0, p1 ->
             })
-            .executor(ActivityCompat.getMainExecutor(activity))
             .build()
             .authenticate(activity, cryptoObject)
             .observeOn(AndroidSchedulers.mainThread())
             .map { authResult ->
                 if (authResult.cryptoObject == null) {
-                    return@map null
+                    throw java.lang.IllegalStateException("CryptoObject should not be null")
                 } else {
                     val cipher = authResult.cryptoObject!!.cipher!!
                     val result = cipher.doFinal(clearTextBytes)
@@ -247,7 +248,10 @@ class SecurePreference(
     }
 
     @RequiresApi(Build.VERSION_CODES.M)
-    fun decryptWithBiometrics(activity: FragmentActivity, encryptTextAndIv: Pair<ByteArray, ByteArray>): Observable<ByteArray?> {
+    fun decryptWithBiometrics(
+        activity: FragmentActivity,
+        encryptTextAndIv: Pair<ByteArray, ByteArray>
+    ): Observable<ByteArray> {
         if (secretKey == null) {
             Toast.makeText(activity, "Run initBiometrics first", Toast.LENGTH_LONG).show()
             return Observable.error(IllegalStateException("Run initBiometrics first"))
@@ -255,31 +259,31 @@ class SecurePreference(
         val cipher = Cipher.getInstance(
             symmetricEncryption + "/"
                     + symmetricBlockMode + "/"
-                    + symmetricPadding)
+                    + symmetricPadding
+        )
             .apply {
                 //https://stackoverflow.com/questions/33995233/android-aes-encryption-decryption-using-gcm-mode-in-android
-                if(symmetricBlockMode == "GCM") {
+                if (symmetricBlockMode == "GCM") {
                     init(Cipher.DECRYPT_MODE, secretKey, GCMParameterSpec(128, encryptTextAndIv.second))
-                }else if (symmetricBlockMode == "ECB"){
+                } else if (symmetricBlockMode == "ECB") {
                     init(Cipher.DECRYPT_MODE, secretKey)
-                }else {
+                } else {
                     init(Cipher.DECRYPT_MODE, secretKey, IvParameterSpec(encryptTextAndIv.second))
                 }
             }
         var cryptoObject = BiometricPrompt.CryptoObject(cipher)
-        return RxBiometric
+        return RxBiometricBuilder()
             .title("Decrypt")
             .description("Decrypt")
             .negativeButtonText("cancel")
             .negativeButtonListener(DialogInterface.OnClickListener { p0, p1 ->
             })
-            .executor(ActivityCompat.getMainExecutor(activity))
             .build()
             .authenticate(activity, cryptoObject)
             .observeOn(AndroidSchedulers.mainThread())
             .map { authResult ->
                 if (authResult.cryptoObject == null) {
-                    return@map null
+                    throw java.lang.IllegalStateException("CryptoObject should not be null")
                 } else {
                     val cipherFromResult = authResult.cryptoObject!!.cipher!!
                     val result = cipherFromResult.doFinal(encryptTextAndIv.first)
@@ -290,13 +294,13 @@ class SecurePreference(
 
 
     @RequiresApi(Build.VERSION_CODES.M)
-    fun initBiometrics(acvitity: FragmentActivity) : Single<Boolean> {
+    fun initBiometrics(acvitity: FragmentActivity): Single<Boolean> {
         return RxPreconditions.canHandleBiometric(acvitity)
             .observeOn(AndroidSchedulers.mainThread())
             .map {
                 if (!it) {
                     throw java.lang.IllegalStateException("No biometric support")
-                }else{
+                } else {
                     secretKey = getSymmetricKey(nameSpace)
                 }
                 return@map it
@@ -315,8 +319,10 @@ class SecurePreference(
         var keyGenerator = KeyGenerator.getInstance(symmetricEncryption, "AndroidKeyStore")
             .apply {
 
-                val builder = KeyGenParameterSpec.Builder(keyAlias,
-                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT)
+                val builder = KeyGenParameterSpec.Builder(
+                    keyAlias,
+                    KeyProperties.PURPOSE_ENCRYPT or KeyProperties.PURPOSE_DECRYPT
+                )
                 val keySpec = builder.setKeySize(256)
                     .setBlockModes(propertyBlockMode)
                     .setEncryptionPaddings(propertyPadding)
