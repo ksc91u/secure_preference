@@ -9,21 +9,31 @@
 
     <Button android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:id="@+id/btn"
-            android:text="Biometrics"
-            app:layout_constraintBottom_toTopOf="@+id/text"
+            android:id="@+id/btnEncrypt"
+            android:text="Encrypt"
+            app:layout_constraintBottom_toTopOf="@+id/textTv"
             app:layout_constraintLeft_toLeftOf="parent"
+            app:layout_constraintRight_toLeftOf="@+id/btnDecrypt"
+            app:layout_constraintTop_toTopOf="parent"/>
+
+    <Button android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:id="@+id/btnDecrypt"
+            android:text="Decrypt"
+            app:layout_constraintBottom_toTopOf="@+id/textTv"
+            app:layout_constraintLeft_toRightOf="@+id/btnEncrypt"
             app:layout_constraintRight_toRightOf="parent"
             app:layout_constraintTop_toTopOf="parent"/>
 
     <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
+            android:layout_width="0dp"
+            android:layout_height="0dp"
             android:text="Hello World!"
-            android:id="@+id/text"
+            android:id="@+id/textTv"
+            android:maxLines="10"
             app:layout_constraintBottom_toBottomOf="parent"
             app:layout_constraintLeft_toLeftOf="parent"
             app:layout_constraintRight_toRightOf="parent"
-            app:layout_constraintTop_toBottomOf="@+id/btn"/>
+            app:layout_constraintTop_toBottomOf="@+id/btnEncrypt"/>
 
 </androidx.constraintlayout.widget.ConstraintLayout>
