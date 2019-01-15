@@ -212,10 +212,10 @@ class SecurePreference(
     fun encryptWithBiometrics(
         activity: FragmentActivity,
         clearTextBytes: ByteArray
-    ): Observable<Pair<ByteArray, ByteArray>> {
+    ): Single<Pair<ByteArray, ByteArray>> {
         if (secretKey == null) {
             Toast.makeText(activity, "Run initBiometrics first", Toast.LENGTH_LONG).show()
-            return Observable.error(IllegalStateException("Run initBiometrics first"))
+            return Single.error(IllegalStateException("Run initBiometrics first"))
         }
         val cipher = Cipher.getInstance(
             symmetricEncryption + "/"
@@ -251,10 +251,10 @@ class SecurePreference(
     fun decryptWithBiometrics(
         activity: FragmentActivity,
         encryptTextAndIv: Pair<ByteArray, ByteArray>
-    ): Observable<ByteArray> {
+    ): Single<ByteArray> {
         if (secretKey == null) {
             Toast.makeText(activity, "Run initBiometrics first", Toast.LENGTH_LONG).show()
-            return Observable.error(IllegalStateException("Run initBiometrics first"))
+            return Single.error(IllegalStateException("Run initBiometrics first"))
         }
         val cipher = Cipher.getInstance(
             symmetricEncryption + "/"

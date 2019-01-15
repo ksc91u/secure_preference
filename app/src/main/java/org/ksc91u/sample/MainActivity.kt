@@ -35,9 +35,9 @@ class MainActivity : AppCompatActivity() {
                 )
                 pair?.let { pairNotNull ->
                     preference.initBiometrics(this)
-                        .flatMapObservable {
-                            return@flatMapObservable preference.decryptWithBiometrics(this@MainActivity, pairNotNull)
-                        }.subscribeBy(onNext = {
+                        .flatMap {
+                            return@flatMap preference.decryptWithBiometrics(this@MainActivity, pairNotNull)
+                        }.subscribeBy(onSuccess = {
                             textTv.text = String(it)
                         }, onError = {
                             Toast.makeText(this@MainActivity, it.localizedMessage, Toast.LENGTH_LONG).show()
@@ -56,12 +56,12 @@ class MainActivity : AppCompatActivity() {
                     symmetricBlockMode = "CBC"
                 )
                 preference.initBiometrics(this)
-                    .flatMapObservable {
-                        return@flatMapObservable preference.encryptWithBiometrics(
+                    .flatMap {
+                        return@flatMap preference.encryptWithBiometrics(
                             this@MainActivity,
                             textLtn.toByteArray()
                         )
-                    }.subscribeBy(onNext = {
+                    }.subscribeBy(onSuccess = {
                         pair = it
                         textTv.text = Base64.encodeToString(it.first, Base64.URL_SAFE)
                     }, onError = {
