@@ -8,6 +8,7 @@ import androidx.appcompat.app.AppCompatActivity
 import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.android.synthetic.main.activity_main.*
 import org.ksc91u.securepreference.SecurePreference
+import java.util.*
 
 class MainActivity : AppCompatActivity() {
 
@@ -41,6 +42,25 @@ class MainActivity : AppCompatActivity() {
 林男說，他也要對浪費社會資源道歉、對造成警方和媒體的困擾道歉、對社區鄰居這幾天出入不便道歉、對岳父岳母道歉。
         """.trimIndent()
         textTv.text = textLtn
+
+        btnWrite.setOnClickListener {
+            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val string = "test 123 " + Random().nextInt()%100
+                preference.putString("test", string,this)
+                    .subscribeBy(onSuccess = {
+                        Toast.makeText(this, "Write $string success", Toast.LENGTH_LONG).show()
+                    })
+            }
+        }
+
+        btnRead.setOnClickListener{
+            if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                preference.getString("test",this)
+                    .subscribeBy(onSuccess = {
+                        Toast.makeText(this, "Read $it success", Toast.LENGTH_LONG).show()
+                    })
+            }
+        }
 
         btnDecrypt.setOnClickListener {
             if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

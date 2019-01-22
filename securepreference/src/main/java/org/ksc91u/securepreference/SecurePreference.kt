@@ -140,7 +140,7 @@ class SecurePreference(
         val androidKeyStore = KeyStore.getInstance("AndroidKeyStore")
         androidKeyStore.load(null)
         if (androidKeyStore.containsAlias(rsaKeyName)) {
-            rsaPrivate = (androidKeyStore.getEntry(rsaKeyName, null) as KeyStore.PrivateKeyEntry).privateKey
+            rsaPrivate = (androidKeyStore.getKey(rsaKeyName, null) as PrivateKey)
             if (rsaPrivate == null) {
                 throw IllegalStateException("Failed to retrive RSA key RSA_$nameSpace from AndroidKeyStore, this should not happen.")
             }
