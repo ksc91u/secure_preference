@@ -299,8 +299,10 @@ class SecurePreference(
     }
 
 
-    @RequiresApi(Build.VERSION_CODES.M)
     fun initBiometrics(acvitity: FragmentActivity): Single<Boolean> {
+        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M){
+            return Single.just(false)
+        }
         return RxPreconditions.canHandleBiometric(acvitity)
             .observeOn(AndroidSchedulers.mainThread())
             .map {
@@ -341,23 +343,29 @@ class SecurePreference(
         return keyGenerator.generateKey()
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
     fun putString(key: String, value: String, activity: FragmentActivity): Single<Boolean> {
-        return encryptWithBiometrics(activity, value.toByteArray())
-            .doOnSuccess {
-                preference.edit().putString(key, Base64.encodeToString(it.first, Base64.URL_SAFE))
-                    .putString(key + "_iv", Base64.encodeToString(it.second, Base64.URL_SAFE)).apply()
-            }.map {
-                return@map true
-            }
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return encryptWithBiometrics(activity, value.toByteArray())
+                .doOnSuccess {
+                    preference.edit().putString(key, Base64.encodeToString(it.first, Base64.URL_SAFE))
+                        .putString(key + "_iv", Base64.encodeToString(it.second, Base64.URL_SAFE)).apply()
+                }.map {
+                    return@map true
+                }
+        }else{
+            return Single.just(false)
+        }
     }
 
-    @RequiresApi(Build.VERSION_CODES.M)
     fun getString(key: String, activity: FragmentActivity): Single<String> {
-        val value = Base64.decode(preference.getString(key, ""), Base64.URL_SAFE)
-        val iv = Base64.decode(preference.getString(key+"_iv", ""), Base64.URL_SAFE)
-        return decryptWithBiometrics(activity, Pair(value, iv)).map {
-            return@map String(it)
+        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            val value = Base64.decode(preference.getString(key, ""), Base64.URL_SAFE)
+            val iv = Base64.decode(preference.getString(key + "_iv", ""), Base64.URL_SAFE)
+            return decryptWithBiometrics(activity, Pair(value, iv)).map {
+                return@map String(it)
+            }
+        }else{
+            return Single.just("")
         }
     }
 

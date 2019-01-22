@@ -23,17 +23,15 @@ class MainActivity : AppCompatActivity() {
         )
 
 
-        if(Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
-            preference.initBiometrics(this).flatMap {
-                return@flatMap preference.putString("main_key", "hello world", this)
-            }.flatMap {
-             return@flatMap preference.getString("main_key", this)
-            }.subscribeBy(onSuccess = {
-                println(">>> put ok")
-                println(">>> get $it")
-            })
+        preference.initBiometrics(this).flatMap {
+            return@flatMap preference.putString("main_key", "hello world", this)
+        }.flatMap {
+            return@flatMap preference.getString("main_key", this)
+        }.subscribeBy(onSuccess = {
+            println(">>> put ok")
+            println(">>> get $it")
+        })
 
-        }
 
         var textLtn = """
 〔即時新聞／綜合報導〕新北市蘆洲區林姓男子，僅僅因為兒子買肉圓沒加辣，竟直接出手痛毆，連上來勸阻的妻子被狠狠勒脖，
@@ -45,17 +43,17 @@ class MainActivity : AppCompatActivity() {
 
         btnWrite.setOnClickListener {
             if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val string = "test 123 " + Random().nextInt()%100
-                preference.putString("test", string,this)
+                val string = "test 123 " + Random().nextInt() % 100
+                preference.putString("test", string, this)
                     .subscribeBy(onSuccess = {
                         Toast.makeText(this, "Write $string success", Toast.LENGTH_LONG).show()
                     })
             }
         }
 
-        btnRead.setOnClickListener{
+        btnRead.setOnClickListener {
             if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                preference.getString("test",this)
+                preference.getString("test", this)
                     .subscribeBy(onSuccess = {
                         Toast.makeText(this, "Read $it success", Toast.LENGTH_LONG).show()
                     })
