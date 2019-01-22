@@ -15,10 +15,10 @@ import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import com.github.pwittchen.rxbiometric.library.RxBiometricBuilder
 import com.github.pwittchen.rxbiometric.library.validation.RxPreconditions
-import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.subscribeBy
 import java.math.BigInteger
 import java.security.*
 import java.util.*
@@ -157,9 +157,9 @@ class SecurePreference(
             .setSerialNumber(BigInteger.ONE)
             .setStartDate(Date(1970, 1, 1, 1, 1, 1))
             .setEndDate(Date(2100, 1, 1, 1, 1, 1))
-        if(android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M){
+        if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             keySpecBuilder.setKeyType(KeyProperties.KEY_ALGORITHM_RSA)
-        }else{
+        } else {
             keySpecBuilder.setKeyType(KEY_ALGORITHM_RSA)
         }
         kpg.initialize(keySpecBuilder.build())
@@ -338,6 +338,26 @@ class SecurePreference(
                 init(keySpec)
             }
         return keyGenerator.generateKey()
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun putString(key: String, value: String, activity: FragmentActivity): Single<Boolean> {
+        return encryptWithBiometrics(activity, value.toByteArray())
+            .doOnSuccess {
+                preference.edit().putString(key, Base64.encodeToString(it.first, Base64.URL_SAFE))
+                    .putString(key + "_iv", Base64.encodeToString(it.second, Base64.URL_SAFE)).apply()
+            }.map {
+                return@map true
+            }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.M)
+    fun getString(key: String, activity: FragmentActivity): Single<String> {
+        val value = Base64.decode(preference.getString(key, ""), Base64.URL_SAFE)
+        val iv = Base64.decode(preference.getString(key+"_iv", ""), Base64.URL_SAFE)
+        return decryptWithBiometrics(activity, Pair(value, iv)).map {
+            return@map String(it)
+        }
     }
 
 }

@@ -16,6 +16,23 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        val preference = SecurePreference(
+            "main",
+            this
+        )
+
+
+        if(Build.VERSION.SDK_INT > Build.VERSION_CODES.M) {
+            preference.initBiometrics(this).flatMap {
+                return@flatMap preference.putString("main_key", "hello world", this)
+            }.flatMap {
+             return@flatMap preference.getString("main_key", this)
+            }.subscribeBy(onSuccess = {
+                println(">>> put ok")
+                println(">>> get $it")
+            })
+
+        }
 
         var textLtn = """
 〔即時新聞／綜合報導〕新北市蘆洲區林姓男子，僅僅因為兒子買肉圓沒加辣，竟直接出手痛毆，連上來勸阻的妻子被狠狠勒脖，
@@ -38,8 +55,10 @@ class MainActivity : AppCompatActivity() {
                         .flatMap {
                             return@flatMap preference.decryptWithBiometrics(this@MainActivity, pairNotNull)
                         }.subscribeBy(onSuccess = {
+                            println(">>>> onsuccess")
                             textTv.text = String(it)
                         }, onError = {
+                            println(">>>> onerror")
                             Toast.makeText(this@MainActivity, it.localizedMessage, Toast.LENGTH_LONG).show()
                         })
                 }
@@ -69,24 +88,5 @@ class MainActivity : AppCompatActivity() {
                     })
             }
         }
-
-        var modes = arrayOf("GCM")
-        modes.forEach {
-            try {
-                val preference = SecurePreference(
-                    "xx1b",
-                    this,
-                    symmetricPadding = "NoPadding",
-                    symmetricBlockMode = it
-                )
-                val bytes = preference.encryptWithPasscode("password", textLtn.toByteArray())
-                val decrypt = preference.decryptWithPasscode("password", bytes)
-                println(">>>> $it" + String(decrypt))
-            } catch (e: Exception) {
-                println(">>>> $it failed")
-                println(">>>> ${e.localizedMessage}")
-            }
-        }
-
     }
 }
