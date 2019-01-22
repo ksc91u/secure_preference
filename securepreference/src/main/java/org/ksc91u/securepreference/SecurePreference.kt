@@ -116,6 +116,7 @@ class SecurePreference(
 
             symmetricSalt32Bytes = rsaDecCipherDecrypt.doFinal(Base64.decode(salt0, Base64.NO_PADDING))
                 .plus(rsaDecCipherDecrypt.doFinal(Base64.decode(salt1, Base64.NO_PADDING)))
+            return
         }
         preference.edit().remove("0_$keyName").remove("1_$keyName").apply()
 
