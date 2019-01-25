@@ -18,7 +18,6 @@ import com.github.pwittchen.rxbiometric.library.validation.RxPreconditions
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.rxkotlin.subscribeBy
 import java.math.BigInteger
 import java.security.*
 import java.util.*
@@ -31,27 +30,27 @@ import javax.security.auth.x500.X500Principal
 
 class SecurePreference(
     private val nameSpace: String,
-    private val context: Context,
+    private val activity: FragmentActivity,
     private val symmetricEncryption: String = "AES",
     val symmetricPadding: String = "NoPadding",
     val symmetricBlockMode: String = "GCM"
 ) {
 
-    private lateinit var preference: SharedPreferences
-
     private val disposable: CompositeDisposable = CompositeDisposable()
+
+    private var preference: SharedPreferences =
+        activity.getSharedPreferences("secure_$nameSpace", Context.MODE_PRIVATE)
+
     private var secretKey: SecretKey? = null
     private var rsaPrivate: PrivateKey? = null
     private var rsaPublic: PublicKey? = null
     private val secureRandom = SecureRandom()
     private val cipherMode: String by lazy { "$symmetricEncryption/$symmetricBlockMode/$symmetricPadding" }
     private val ivRequired: Int by lazy {
-        if (symmetricBlockMode == "ECB") {
-            0
-        } else if (symmetricEncryption == "BLOWFISH") {
-            8
-        } else {
-            16
+        when {
+            symmetricBlockMode == "ECB" -> 0
+            symmetricEncryption == "BLOWFISH" -> 8
+            else -> 16
         }
     }
 
@@ -92,8 +91,6 @@ class SecurePreference(
             throw IllegalArgumentException("Need to specify a nameSpace")
         }
 
-        preference = context.getSharedPreferences("secure_$nameSpace", Context.MODE_PRIVATE)
-
         initRsaKey()
         initSymmetricSalt()
     }
@@ -103,8 +100,8 @@ class SecurePreference(
     }
 
     private fun initSymmetricSalt() {
-        var byte16_0 = ByteArray(16)
-        var byte16_1 = ByteArray(16)
+        val byte16_0 = ByteArray(16)
+        val byte16_1 = ByteArray(16)
         val keyName = "$nameSpace$symmetricEncryption"
         val rsaDecCipherDecrypt = Cipher.getInstance(RSA_ECB_PKCS1).apply {
             init(Cipher.DECRYPT_MODE, rsaPrivate)
@@ -123,7 +120,7 @@ class SecurePreference(
         secureRandom.nextBytes(byte16_0)
         secureRandom.nextBytes(byte16_1)
 
-        var rsaEncCipher = Cipher.getInstance(RSA_ECB_PKCS1).apply {
+        val rsaEncCipher = Cipher.getInstance(RSA_ECB_PKCS1).apply {
             init(Cipher.ENCRYPT_MODE, rsaPublic)
         }
 
@@ -151,7 +148,7 @@ class SecurePreference(
         }
 
         val kpg = KeyPairGenerator.getInstance(KEY_ALGORITHM_RSA, "AndroidKeyStore")
-        val keySpecBuilder = KeyPairGeneratorSpec.Builder(context)
+        val keySpecBuilder = KeyPairGeneratorSpec.Builder(activity)
             .setAlias(rsaKeyName)
             .setKeySize(3072)
             .setSubject(X500Principal("CN=$nameSpace"))
@@ -177,7 +174,7 @@ class SecurePreference(
     }
 
     fun encryptWithPasscode(passcode: String, clearTextBytes: ByteArray): ByteArray {
-        var iv = ByteArray(ivRequired)
+        val iv = ByteArray(ivRequired)
         secureRandom.nextBytes(iv)
 
         val skeySpec = SecretKeySpec(digestPassCode(passcode), symmetricEncryption)
@@ -216,7 +213,6 @@ class SecurePreference(
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun encryptWithBiometrics(
-        activity: FragmentActivity,
         clearTextBytes: ByteArray
     ): Single<Pair<ByteArray, ByteArray>> {
         if (secretKey == null) {
@@ -231,7 +227,7 @@ class SecurePreference(
             .apply {
                 init(Cipher.ENCRYPT_MODE, secretKey)
             }
-        var cryptoObject = BiometricPrompt.CryptoObject(cipher)
+        val cryptoObject = BiometricPrompt.CryptoObject(cipher)
         return RxBiometricBuilder()
             .title("Encrypt")
             .description("Encrypt")
@@ -255,7 +251,6 @@ class SecurePreference(
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun decryptWithBiometrics(
-        activity: FragmentActivity,
         encryptTextAndIv: Pair<ByteArray, ByteArray>
     ): Single<ByteArray> {
         if (secretKey == null) {
@@ -277,7 +272,7 @@ class SecurePreference(
                     init(Cipher.DECRYPT_MODE, secretKey, IvParameterSpec(encryptTextAndIv.second))
                 }
             }
-        var cryptoObject = BiometricPrompt.CryptoObject(cipher)
+        val cryptoObject = BiometricPrompt.CryptoObject(cipher)
         return RxBiometricBuilder()
             .title("Decrypt")
             .description("Decrypt")
@@ -299,11 +294,11 @@ class SecurePreference(
     }
 
 
-    fun initBiometrics(acvitity: FragmentActivity): Single<Boolean> {
-        if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M){
+    fun initBiometrics(): Single<Boolean> {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return Single.just(false)
         }
-        return RxPreconditions.canHandleBiometric(acvitity)
+        return RxPreconditions.canHandleBiometric(activity)
             .observeOn(AndroidSchedulers.mainThread())
             .map {
                 if (!it) {
@@ -324,7 +319,7 @@ class SecurePreference(
         }
 
 
-        var keyGenerator = KeyGenerator.getInstance(symmetricEncryption, "AndroidKeyStore")
+        val keyGenerator = KeyGenerator.getInstance(symmetricEncryption, "AndroidKeyStore")
             .apply {
 
                 val builder = KeyGenParameterSpec.Builder(
@@ -343,28 +338,28 @@ class SecurePreference(
         return keyGenerator.generateKey()
     }
 
-    fun putString(key: String, value: String, activity: FragmentActivity): Single<Boolean> {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            return encryptWithBiometrics(activity, value.toByteArray())
+    fun putString(key: String, value: String): Single<Boolean> {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            return encryptWithBiometrics(value.toByteArray())
                 .doOnSuccess {
                     preference.edit().putString(key, Base64.encodeToString(it.first, Base64.URL_SAFE))
                         .putString(key + "_iv", Base64.encodeToString(it.second, Base64.URL_SAFE)).apply()
                 }.map {
                     return@map true
                 }
-        }else{
+        } else {
             return Single.just(false)
         }
     }
 
-    fun getString(key: String, activity: FragmentActivity): Single<String> {
-        if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    fun getString(key: String): Single<String> {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val value = Base64.decode(preference.getString(key, ""), Base64.URL_SAFE)
             val iv = Base64.decode(preference.getString(key + "_iv", ""), Base64.URL_SAFE)
-            return decryptWithBiometrics(activity, Pair(value, iv)).map {
+            return decryptWithBiometrics(Pair(value, iv)).map {
                 return@map String(it)
             }
-        }else{
+        } else {
             return Single.just("")
         }
     }
