@@ -18,7 +18,6 @@ import com.github.pwittchen.rxbiometric.library.validation.RxPreconditions
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
-import io.reactivex.rxkotlin.subscribeBy
 import java.math.BigInteger
 import java.security.*
 import java.util.*
@@ -31,7 +30,7 @@ import javax.security.auth.x500.X500Principal
 
 class SecurePreference(
     private val nameSpace: String,
-    private val context: Context,
+    private val activity: FragmentActivity,
     private val symmetricEncryption: String = "AES",
     val symmetricPadding: String = "NoPadding",
     val symmetricBlockMode: String = "GCM"
@@ -92,7 +91,7 @@ class SecurePreference(
             throw IllegalArgumentException("Need to specify a nameSpace")
         }
 
-        preference = context.getSharedPreferences("secure_$nameSpace", Context.MODE_PRIVATE)
+        preference = activity.getSharedPreferences("secure_$nameSpace", Context.MODE_PRIVATE)
 
         initRsaKey()
         initSymmetricSalt()
@@ -151,7 +150,7 @@ class SecurePreference(
         }
 
         val kpg = KeyPairGenerator.getInstance(KEY_ALGORITHM_RSA, "AndroidKeyStore")
-        val keySpecBuilder = KeyPairGeneratorSpec.Builder(context)
+        val keySpecBuilder = KeyPairGeneratorSpec.Builder(activity)
             .setAlias(rsaKeyName)
             .setKeySize(3072)
             .setSubject(X500Principal("CN=$nameSpace"))
@@ -216,7 +215,6 @@ class SecurePreference(
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun encryptWithBiometrics(
-        activity: FragmentActivity,
         clearTextBytes: ByteArray
     ): Single<Pair<ByteArray, ByteArray>> {
         if (secretKey == null) {
@@ -255,7 +253,6 @@ class SecurePreference(
 
     @RequiresApi(Build.VERSION_CODES.M)
     fun decryptWithBiometrics(
-        activity: FragmentActivity,
         encryptTextAndIv: Pair<ByteArray, ByteArray>
     ): Single<ByteArray> {
         if (secretKey == null) {
@@ -299,11 +296,11 @@ class SecurePreference(
     }
 
 
-    fun initBiometrics(acvitity: FragmentActivity): Single<Boolean> {
+    fun initBiometrics(): Single<Boolean> {
         if(Build.VERSION.SDK_INT < Build.VERSION_CODES.M){
             return Single.just(false)
         }
-        return RxPreconditions.canHandleBiometric(acvitity)
+        return RxPreconditions.canHandleBiometric(activity)
             .observeOn(AndroidSchedulers.mainThread())
             .map {
                 if (!it) {
@@ -343,9 +340,9 @@ class SecurePreference(
         return keyGenerator.generateKey()
     }
 
-    fun putString(key: String, value: String, activity: FragmentActivity): Single<Boolean> {
+    fun putString(key: String, value: String): Single<Boolean> {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            return encryptWithBiometrics(activity, value.toByteArray())
+            return encryptWithBiometrics(value.toByteArray())
                 .doOnSuccess {
                     preference.edit().putString(key, Base64.encodeToString(it.first, Base64.URL_SAFE))
                         .putString(key + "_iv", Base64.encodeToString(it.second, Base64.URL_SAFE)).apply()
@@ -357,11 +354,11 @@ class SecurePreference(
         }
     }
 
-    fun getString(key: String, activity: FragmentActivity): Single<String> {
+    fun getString(key: String): Single<String> {
         if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val value = Base64.decode(preference.getString(key, ""), Base64.URL_SAFE)
             val iv = Base64.decode(preference.getString(key + "_iv", ""), Base64.URL_SAFE)
-            return decryptWithBiometrics(activity, Pair(value, iv)).map {
+            return decryptWithBiometrics(Pair(value, iv)).map {
                 return@map String(it)
             }
         }else{
