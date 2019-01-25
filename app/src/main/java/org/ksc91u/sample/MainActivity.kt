@@ -23,10 +23,10 @@ class MainActivity : AppCompatActivity() {
         )
 
 
-        preference.initBiometrics(this).flatMap {
-            return@flatMap preference.putString("main_key", "hello world", this)
+        preference.initBiometrics().flatMap {
+            return@flatMap preference.putString("main_key", "hello world")
         }.flatMap {
-            return@flatMap preference.getString("main_key", this)
+            return@flatMap preference.getString("main_key")
         }.subscribeBy(onSuccess = {
             println(">>> put ok")
             println(">>> get $it")
@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         btnWrite.setOnClickListener {
             if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 val string = "test 123 " + Random().nextInt() % 100
-                preference.putString("test", string, this)
+                preference.putString("test", string)
                     .subscribeBy(onSuccess = {
                         Toast.makeText(this, "Write $string success", Toast.LENGTH_LONG).show()
                     })
@@ -53,7 +53,7 @@ class MainActivity : AppCompatActivity() {
 
         btnRead.setOnClickListener {
             if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                preference.getString("test", this)
+                preference.getString("test")
                     .subscribeBy(onSuccess = {
                         Toast.makeText(this, "Read $it success", Toast.LENGTH_LONG).show()
                     })
@@ -69,9 +69,9 @@ class MainActivity : AppCompatActivity() {
                     symmetricBlockMode = "CBC"
                 )
                 pair?.let { pairNotNull ->
-                    preference.initBiometrics(this)
+                    preference.initBiometrics()
                         .flatMap {
-                            return@flatMap preference.decryptWithBiometrics(this@MainActivity, pairNotNull)
+                            return@flatMap preference.decryptWithBiometrics(pairNotNull)
                         }.subscribeBy(onSuccess = {
                             println(">>>> onsuccess")
                             textTv.text = String(it)
@@ -92,12 +92,9 @@ class MainActivity : AppCompatActivity() {
                     symmetricPadding = "PKCS7Padding",
                     symmetricBlockMode = "CBC"
                 )
-                preference.initBiometrics(this)
+                preference.initBiometrics()
                     .flatMap {
-                        return@flatMap preference.encryptWithBiometrics(
-                            this@MainActivity,
-                            textLtn.toByteArray()
-                        )
+                        return@flatMap preference.encryptWithBiometrics(textLtn.toByteArray())
                     }.subscribeBy(onSuccess = {
                         pair = it
                         textTv.text = Base64.encodeToString(it.first, Base64.URL_SAFE)
