@@ -14,6 +14,7 @@ import androidx.annotation.RequiresApi
 import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import com.github.pwittchen.rxbiometric.library.RxBiometricBuilder
+import com.github.pwittchen.rxbiometric.library.validation.Preconditions
 import com.github.pwittchen.rxbiometric.library.validation.RxPreconditions
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
@@ -294,20 +295,16 @@ class SecurePreference(
     }
 
 
-    fun initBiometrics(): Single<Boolean> {
+    fun initBiometrics(): Boolean {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-            return Single.just(false)
+            return false
         }
-        return RxPreconditions.canHandleBiometric(activity)
-            .observeOn(AndroidSchedulers.mainThread())
-            .map {
-                if (!it) {
-                    throw java.lang.IllegalStateException("No biometric support")
-                } else {
-                    secretKey = getSymmetricKey(nameSpace)
-                }
-                return@map it
-            }
+        if(Preconditions.canHandleBiometric(activity)){
+            secretKey = getSymmetricKey(nameSpace)
+            return true
+        }else{
+            throw java.lang.IllegalStateException("No biometric support")
+        }
     }
 
     @RequiresApi(Build.VERSION_CODES.M)

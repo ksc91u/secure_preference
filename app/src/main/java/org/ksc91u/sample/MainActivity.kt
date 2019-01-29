@@ -23,9 +23,8 @@ class MainActivity : AppCompatActivity() {
         )
 
 
-        preference.initBiometrics().flatMap {
-            return@flatMap preference.putString("main_key", "hello world")
-        }.flatMap {
+        preference.initBiometrics()
+        preference.putString("main_key", "hello world").flatMap {
             return@flatMap preference.getString("main_key")
         }.subscribeBy(onSuccess = {
             println(">>> put ok")
@@ -70,9 +69,7 @@ class MainActivity : AppCompatActivity() {
                 )
                 pair?.let { pairNotNull ->
                     preference.initBiometrics()
-                        .flatMap {
-                            return@flatMap preference.decryptWithBiometrics(pairNotNull)
-                        }.subscribeBy(onSuccess = {
+                    preference.decryptWithBiometrics(pairNotNull).subscribeBy(onSuccess = {
                             println(">>>> onsuccess")
                             textTv.text = String(it)
                         }, onError = {
@@ -93,9 +90,7 @@ class MainActivity : AppCompatActivity() {
                     symmetricBlockMode = "CBC"
                 )
                 preference.initBiometrics()
-                    .flatMap {
-                        return@flatMap preference.encryptWithBiometrics(textLtn.toByteArray())
-                    }.subscribeBy(onSuccess = {
+                preference.encryptWithBiometrics(textLtn.toByteArray()).subscribeBy(onSuccess = {
                         pair = it
                         textTv.text = Base64.encodeToString(it.first, Base64.URL_SAFE)
                     }, onError = {
