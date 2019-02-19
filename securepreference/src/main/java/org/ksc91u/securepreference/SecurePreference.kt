@@ -1,6 +1,7 @@
 package org.ksc91u.securepreference
 
 import android.annotation.SuppressLint
+import android.app.KeyguardManager
 import android.content.Context
 import android.content.DialogInterface
 import android.content.SharedPreferences
@@ -15,7 +16,6 @@ import androidx.biometric.BiometricPrompt
 import androidx.fragment.app.FragmentActivity
 import com.github.pwittchen.rxbiometric.library.RxBiometricBuilder
 import com.github.pwittchen.rxbiometric.library.validation.Preconditions
-import com.github.pwittchen.rxbiometric.library.validation.RxPreconditions
 import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
@@ -74,6 +74,10 @@ class SecurePreference(
     }
 
     private var symmetricSalt32Bytes = ByteArray(32)
+
+    private val keyguardManager: KeyguardManager? by lazy {
+        activity.getSystemService(Context.KEYGUARD_SERVICE) as? KeyguardManager
+    }
 
     companion object {
         const val KEY_ALGORITHM_RSA = "RSA"
@@ -299,11 +303,15 @@ class SecurePreference(
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return false
         }
-        if(Preconditions.canHandleBiometric(activity)){
+        if (Preconditions.canHandleBiometric(activity) && keyguardManager?.isKeyguardSecure == true) {
             secretKey = getSymmetricKey(nameSpace)
             return true
-        }else{
-            throw java.lang.IllegalStateException("No biometric support")
+        } else {
+            if(keyguardManager?.isKeyguardSecure == true) {
+                throw java.lang.IllegalStateException("No biometric support")
+            }else{
+                throw java.lang.SecurityException("Enroll fingerprint first")
+            }
         }
     }
 
@@ -328,7 +336,7 @@ class SecurePreference(
                     .setEncryptionPaddings(propertyPadding)
                     .setRandomizedEncryptionRequired(true)
                     .setUserAuthenticationRequired(true)
-                    .setUserAuthenticationValidityDurationSeconds(5 * 60)
+                    .setUserAuthenticationValidityDurationSeconds(24 * 60 * 60)
                     .build()
                 init(keySpec)
             }
