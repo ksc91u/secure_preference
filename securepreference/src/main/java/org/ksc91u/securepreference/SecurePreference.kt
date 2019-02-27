@@ -335,8 +335,8 @@ class SecurePreference(
                     .setBlockModes(propertyBlockMode)
                     .setEncryptionPaddings(propertyPadding)
                     .setRandomizedEncryptionRequired(true)
-                    .setUserAuthenticationRequired(true)
-                    .setUserAuthenticationValidityDurationSeconds(24 * 60 * 60)
+                    /*.setUserAuthenticationRequired(true)
+                    .setUserAuthenticationValidityDurationSeconds(24 * 60 * 60)*/
                     .build()
                 init(keySpec)
             }
