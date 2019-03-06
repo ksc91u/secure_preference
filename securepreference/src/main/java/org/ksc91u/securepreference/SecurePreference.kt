@@ -307,9 +307,9 @@ class SecurePreference(
             secretKey = getSymmetricKey(nameSpace)
             return true
         } else {
-            if(keyguardManager?.isKeyguardSecure == true) {
+            if (keyguardManager?.isKeyguardSecure == true) {
                 throw java.lang.IllegalStateException("No biometric support")
-            }else{
+            } else {
                 throw java.lang.SecurityException("Enroll fingerprint first")
             }
         }
@@ -367,6 +367,10 @@ class SecurePreference(
         } else {
             return Single.just("")
         }
+    }
+
+    fun removeKey(key: String) {
+        preference.edit().remove(key).remove(key + "_iv").apply()
     }
 
 }
