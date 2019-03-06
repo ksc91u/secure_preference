@@ -376,4 +376,8 @@ class SecurePreference(
         preference.edit().remove(key).remove(key + "_iv").apply()
     }
 
+    fun contains(key: String) : Boolean{
+        return preference.contains(key) && preference.contains(key + "_iv")
+    }
+
 }
