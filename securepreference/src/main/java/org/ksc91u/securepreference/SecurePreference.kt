@@ -361,9 +361,12 @@ class SecurePreference(
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             val value = Base64.decode(preference.getString(key, ""), Base64.URL_SAFE)
             val iv = Base64.decode(preference.getString(key + "_iv", ""), Base64.URL_SAFE)
+            if(value.isEmpty() || iv.isEmpty()){
+                return Single.just("")
+            }
             return decryptWithBiometrics(Pair(value, iv)).map {
                 return@map String(it)
-            }
+            }.onErrorResumeNext{ Single.just("") }
         } else {
             return Single.just("")
         }
