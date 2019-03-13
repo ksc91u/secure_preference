@@ -1,3 +1,8 @@
 <resources>
     <string name="app_name">securepreference</string>
+    <string name="biometric_decrypt_title">Decrypt Title</string>
+    <string name="biometric_decrypt_message">Decrypt Message</string>
+    <string name="biometric_cancel">Cancel</string>
+    <string name="biometric_encrypt_title">Encrypt Title</string>
+    <string name="biometric_encrypt_message">Encrypt Message</string>
 </resources>

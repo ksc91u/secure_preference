@@ -234,9 +234,9 @@ class SecurePreference(
             }
         val cryptoObject = BiometricPrompt.CryptoObject(cipher)
         return RxBiometricBuilder()
-            .title("Encrypt")
-            .description("Encrypt")
-            .negativeButtonText("cancel")
+            .title(activity.resources.getString(R.string.biometric_encrypt_title))
+            .description(activity.resources.getString(R.string.biometric_encrypt_message))
+            .negativeButtonText(activity.resources.getString(R.string.biometric_cancel))
             .negativeButtonListener(DialogInterface.OnClickListener { p0, p1 ->
             })
             .build()
@@ -279,9 +279,9 @@ class SecurePreference(
             }
         val cryptoObject = BiometricPrompt.CryptoObject(cipher)
         return RxBiometricBuilder()
-            .title("Decrypt")
-            .description("Decrypt")
-            .negativeButtonText("cancel")
+            .title(activity.resources.getString(R.string.biometric_decrypt_title))
+            .description(activity.resources.getString(R.string.biometric_decrypt_message))
+            .negativeButtonText(activity.resources.getString(R.string.biometric_cancel))
             .negativeButtonListener(DialogInterface.OnClickListener { p0, p1 ->
             })
             .build()
