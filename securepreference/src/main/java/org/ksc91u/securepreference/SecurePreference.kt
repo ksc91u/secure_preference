@@ -373,7 +373,7 @@ class SecurePreference(
     }
 
     fun removeKey(key: String) {
-        preference.edit().remove(key).remove(key + "_iv").apply()
+        preference.edit().remove(key).remove(key + "_iv").commit()
     }
 
     fun contains(key: String) : Boolean{
