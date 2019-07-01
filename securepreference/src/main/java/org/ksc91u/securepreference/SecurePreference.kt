@@ -244,6 +244,7 @@ class SecurePreference(
             .observeOn(AndroidSchedulers.mainThread())
             .map { authResult ->
                 if (authResult.cryptoObject == null) {
+                    println(">>> auth failed")
                     throw java.lang.IllegalStateException("CryptoObject should not be null")
                 } else {
                     val cipher = authResult.cryptoObject!!.cipher!!

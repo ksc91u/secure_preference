@@ -5,6 +5,8 @@ import android.os.Bundle
 import android.util.Base64
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.DialogFragment
+import androidx.fragment.app.FragmentManager
 import io.reactivex.rxkotlin.subscribeBy
 import kotlinx.android.synthetic.main.activity_main.*
 import org.ksc91u.securepreference.SecurePreference
@@ -24,12 +26,13 @@ class MainActivity : AppCompatActivity() {
 
 
         preference.initBiometrics()
+        /*
         preference.putString("main_key", "hello world").flatMap {
             return@flatMap preference.getString("main_key")
         }.subscribeBy(onSuccess = {
             println(">>> put ok")
             println(">>> get $it")
-        })
+        })*/
 
 
         var textLtn = """
@@ -94,9 +97,23 @@ class MainActivity : AppCompatActivity() {
                         pair = it
                         textTv.text = Base64.encodeToString(it.first, Base64.URL_SAFE)
                     }, onError = {
+                        supportFragmentManager.removeBiometricFragments()
                         Toast.makeText(this@MainActivity, it.localizedMessage, Toast.LENGTH_LONG).show()
                     })
             }
         }
+    }
+
+}
+
+fun FragmentManager.removeBiometricFragments() {
+    findFragmentByTag("FingerprintDialogFragment")?.let {
+        (it as DialogFragment).dismiss()
+    }
+    findFragmentByTag("FingerprintHelperFragment")?.let {
+        beginTransaction().remove(it).commitNow()
+    }
+    findFragmentByTag("BiometricFragment")?.let {
+        beginTransaction().remove(it).commitNow()
     }
 }
