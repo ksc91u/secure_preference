@@ -36,10 +36,7 @@ class MainActivity : AppCompatActivity() {
 
 
         var textLtn = """
-〔即時新聞／綜合報導〕新北市蘆洲區林姓男子，僅僅因為兒子買肉圓沒加辣，竟直接出手痛毆，連上來勸阻的妻子被狠狠勒脖，
-林男目前已在新北市蘆洲分局集賢派出所公開道歉。
-42歲的林姓男子戴著口罩在派出所現身，表示由於酒後失控對老婆小孩造成了傷害，必須要在此致歉，接著就鞠躬道歉。
-林男說，他也要對浪費社會資源道歉、對造成警方和媒體的困擾道歉、對社區鄰居這幾天出入不便道歉、對岳父岳母道歉。
+示範將 session token 加密過後存到 Shared Preference, 必須經過指紋驗證才能解密拿到 token。session token 則可以用來免密碼登入 server。
         """.trimIndent()
         textTv.text = textLtn
 
